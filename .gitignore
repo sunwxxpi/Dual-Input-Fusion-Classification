@@ -1,0 +1,8 @@
+# Byte-compiled / optimized / DLL files
+__pycache__
+*.py[cod]
+
+data
+logs
+weight
+result
