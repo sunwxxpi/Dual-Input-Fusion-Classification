@@ -74,7 +74,7 @@ def train(config, train_loader, test_loader, fold, test_idx):
     # TensorBoard WRITER
     writer = SummaryWriter(log_dir=f'./logs/{config.model_name}_{config.writer_comment}_{str(fold)}')
 
-    best_acc = 0
+    best_val_loss = float('inf')
     ckpt_path = os.path.join(config.model_path, config.model_name, config.writer_comment)
     model_save_path = os.path.join(ckpt_path, str(fold))
 
@@ -131,8 +131,8 @@ def train(config, train_loader, test_loader, fold, test_idx):
             writer.add_scalar('Validation/Pre', pre, global_step=epoch)
             writer.add_scalar('Validation/Spe', spe, global_step=epoch)
 
-            if epoch > config.epochs // 4 and val_acc > best_acc:
-                best_acc = val_acc
+            if epoch > config.warmup_epochs and val_loss < best_val_loss:
+                best_val_loss = val_loss
                 print("=> saved best model")
 
                 if not os.path.exists(model_save_path):
@@ -141,16 +141,16 @@ def train(config, train_loader, test_loader, fold, test_idx):
                 if config.save_model:
                     torch.save(model.state_dict(), os.path.join(model_save_path, 'best_model.pth'))
 
-                save_results(model_save_path, 'result_best.txt', epoch, avg_epoch_loss, val_acc, spe, sen, auc, pre, f1score, 'w')
+                save_results(model_save_path, 'result_best.txt', epoch, val_loss, val_acc, spe, sen, auc, pre, f1score, 'w')
 
             if epoch == config.epochs:
                 if config.save_model:
                     torch.save(model.state_dict(), os.path.join(model_save_path, 'last_epoch_model.pth'))
 
-                save_results(model_save_path, 'result_last_epoch.txt', epoch, avg_epoch_loss, val_acc, spe, sen, auc, pre, f1score, 'a')
+                save_results(model_save_path, 'result_last_epoch.txt', epoch, val_loss, val_acc, spe, sen, auc, pre, f1score, 'a')
 
             writer.flush()
-
+            
     writer.close()
 
 
@@ -159,8 +159,8 @@ if __name__ == '__main__':
     args = config()
 
     cv = KFold(n_splits=args.fold, random_state=42, shuffle=True)
-    train_set = dataset.get_dataset(args.data_path, args.csv_path, args.img_size, mode='train')
-    test_set = dataset.get_dataset(args.data_path, args.csv_path, args.img_size, mode='test')
+    train_set = dataset.get_dataset(args.data_path, args.img_size, mode='train')
+    test_set = dataset.get_dataset(args.data_path, args.img_size, mode='test')
 
     print(args)
     argspath = os.path.join(args.model_path, args.model_name, args.writer_comment)
@@ -183,3 +183,5 @@ if __name__ == '__main__':
         train(args, train_loader, test_loader, fold, test_idx)
 
         fold += 1
+        
+# python train.py --data_path ./data/BUSI_2_class/train --class_num 2 --model_name hovertrans --writer_comment BUSI_2_class_img --mode img

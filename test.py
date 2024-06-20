@@ -34,7 +34,7 @@ def main():
     config = load_config()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    test_dataset = dataset.get_dataset(config.data_path, config.csv_path, config.img_size, mode='test')
+    test_dataset = dataset.get_dataset(config.data_path, config.img_size, mode='test')
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=6)
 
     for fold in range(1, 6):
@@ -75,10 +75,8 @@ def main():
         print(f'F1 Score: {f1:.4f}')
         print(class_report)
 
-        output_path = f'./result/{config.writer_comment}_{fold}.png'
+        output_path = f'./result/{config.model_name}_{config.writer_comment}_{fold}.png'
         plot_confusion_matrix(conf_matrix, [str(i) for i in range(config.class_num)], accuracy, f1, output_path)
 
 if __name__ == '__main__':
     main()
-    
-# CUDA_VISIBLE_DEVICES=1 python test.py --data_path ./data/BUSI/test --csv_path ./data/BUSI/test/label.csv --model_path ./weight --class_num 3 --model_name hovertrans --writer_comment BUSI_img
