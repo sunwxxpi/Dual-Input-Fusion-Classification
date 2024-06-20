@@ -1,4 +1,5 @@
 import random
+import os
 import pandas as pd
 import numpy as np
 import cv2
@@ -45,13 +46,13 @@ class AddBlur(object):
             return img
 
 
-class Custom_Dataset(Dataset):
-    def __init__(self, root, transform, mask_transform, csv_path):
+class CustomDataset(Dataset):
+    def __init__(self, root, transform, mask_transform):
         super().__init__()
         self.root = root
+        self.csv = os.path.join(root, "label.csv")
         self.transform = transform
         self.mask_transform = mask_transform
-        self.csv = csv_path
         self.info = pd.read_csv(self.csv)
 
     def __len__(self):
@@ -74,7 +75,7 @@ class Custom_Dataset(Dataset):
         return {'imgs': img, 'masks': mask, 'labels': label, 'names': file_name}
 
 
-def get_dataset(imgpath, csvpath, img_size, mode='train', keyword=None):
+def get_dataset(imgpath, img_size, mode='train'):
     train_transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         AddGaussianNoise(amplitude=random.uniform(0, 1), p=0.5),
@@ -105,6 +106,6 @@ def get_dataset(imgpath, csvpath, img_size, mode='train', keyword=None):
     elif mode == 'test':
         transform = test_transform
 
-    dataset = Custom_Dataset(imgpath, transform, mask_transform, csvpath)
+    dataset = CustomDataset(imgpath, transform, mask_transform)
 
     return dataset

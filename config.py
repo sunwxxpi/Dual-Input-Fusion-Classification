@@ -4,7 +4,6 @@ import argparse
 def config():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', type=str)
-    parser.add_argument('--csv_path', type=str)
     parser.add_argument('--model_name', type=str, default='hovertrans', choices=['hovertrans', 'custom'])
     parser.add_argument('--model_path', type=str, default='./weight')
     parser.add_argument('--writer_comment', type=str, default='GDPH&SYSUCC')
