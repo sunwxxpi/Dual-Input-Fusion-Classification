@@ -39,11 +39,11 @@ def confusion_matrix(preds, labels, conf_matrix):
 
 def save_results(model_save_path, filename, epoch, loss, val_acc, spe, sen, auc, pre, f1score, mode='a'):
     with open(os.path.join(model_save_path, filename), mode) as f:
-        f.write(f'\nResult: (Epoch {epoch})\n')
+        f.write(f'Result: (Epoch {epoch})\n')
         f.write('Loss: %f, Acc: %f, Spe: %f, Sen: %f, AUC: %f, Pre: %f, F1 Score: %f' % (loss, val_acc, spe, sen, auc, pre, f1score))
 
 
-def train(config, train_loader, test_loader, fold, test_idx):
+def train(config, train_loader, test_loader, fold):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # MODEL
@@ -53,7 +53,7 @@ def train(config, train_loader, test_loader, fold, test_idx):
     model = model.to(device)
 
     # LOSS FUNCTION
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.15).to(device) if config.loss_function == 'CE' else None
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.2).to(device) if config.loss_function == 'CE' else None
 
     # OPTIMIZER
     optimizer = {
@@ -74,9 +74,10 @@ def train(config, train_loader, test_loader, fold, test_idx):
     # TensorBoard WRITER
     writer = SummaryWriter(log_dir=f'./logs/{config.model_name}_{config.writer_comment}_{str(fold)}')
 
-    best_val_loss = float('inf')
     ckpt_path = os.path.join(config.model_path, config.model_name, config.writer_comment)
     model_save_path = os.path.join(ckpt_path, str(fold))
+    
+    best_val_acc = 0
 
     for epoch in range(1, config.epochs + 1):
         model.train()
@@ -110,7 +111,7 @@ def train(config, train_loader, test_loader, fold, test_idx):
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         train_acc = cm.diag().sum() / cm.sum()
-        print('Epoch [%d/%d] - Avg Train Loss: %.4f' % (epoch, config.epochs, avg_epoch_loss))
+        print('Fold [%d], Epoch [%d/%d] - Avg Train Loss: %.4f' % (fold, epoch, config.epochs, avg_epoch_loss))
 
         # Log training metrics
         writer.add_scalar('Train/Avg Epoch Loss', avg_epoch_loss, global_step=epoch)
@@ -131,8 +132,8 @@ def train(config, train_loader, test_loader, fold, test_idx):
             writer.add_scalar('Validation/Pre', pre, global_step=epoch)
             writer.add_scalar('Validation/Spe', spe, global_step=epoch)
 
-            if epoch > config.warmup_epochs and val_loss < best_val_loss:
-                best_val_loss = val_loss
+            if epoch > (config.epochs // 5) and val_acc > best_val_acc:
+                best_val_acc = val_acc
                 print("=> saved best model")
 
                 if not os.path.exists(model_save_path):
@@ -141,13 +142,13 @@ def train(config, train_loader, test_loader, fold, test_idx):
                 if config.save_model:
                     torch.save(model.state_dict(), os.path.join(model_save_path, 'best_model.pth'))
 
-                save_results(model_save_path, 'result_best.txt', epoch, val_loss, val_acc, spe, sen, auc, pre, f1score, 'w')
+                save_results(model_save_path, 'result_best.txt', epoch, val_loss, val_acc, f1score, auc, spe, sen, pre, 'w')
 
             if epoch == config.epochs:
                 if config.save_model:
                     torch.save(model.state_dict(), os.path.join(model_save_path, 'last_epoch_model.pth'))
 
-                save_results(model_save_path, 'result_last_epoch.txt', epoch, val_loss, val_acc, spe, sen, auc, pre, f1score, 'a')
+                save_results(model_save_path, 'result_last_epoch.txt', epoch, val_loss, val_acc, f1score, auc, spe, sen, pre, 'a')
 
             writer.flush()
             
@@ -162,13 +163,13 @@ if __name__ == '__main__':
     train_set = dataset.get_dataset(args.data_path, args.img_size, mode='train')
     test_set = dataset.get_dataset(args.data_path, args.img_size, mode='test')
 
-    print(args)
-    argspath = os.path.join(args.model_path, args.model_name, args.writer_comment)
+    print(vars(args))
+    args_path = os.path.join(args.model_path, args.model_name, args.writer_comment)
 
-    if not os.path.exists(argspath):
-        os.makedirs(argspath)
-    with open(os.path.join(argspath, 'model_info.txt'), 'w') as f:
-        f.write(str(args))
+    if not os.path.exists(args_path):
+        os.makedirs(args_path)
+    with open(os.path.join(args_path, 'model_info.txt'), 'w') as f:
+        f.write(str(vars(args)))
 
     print("START TRAINING")
     fold = 1
@@ -180,7 +181,7 @@ if __name__ == '__main__':
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=False, sampler=train_sampler, num_workers=6)
         test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, sampler=test_sampler)
 
-        train(args, train_loader, test_loader, fold, test_idx)
+        train(args, train_loader, test_loader, fold)
 
         fold += 1
         

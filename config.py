@@ -15,9 +15,9 @@ def config():
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--class_num', type=int, default=2)
     parser.add_argument('--fold', type=int, default=5)
-    parser.add_argument('--epochs', type=int, default=300)
+    parser.add_argument('--epochs', type=int, default=250)
     parser.add_argument('--log_step', type=int, default=5)
-    parser.add_argument('--lr', type=float, default=0.0002)
+    parser.add_argument('--lr', type=float, default=0.0001)
 
     parser.add_argument('--patch_size', type=list, default=[2, 2, 2, 2])
     parser.add_argument('--hover_size', type=list, default=[2, 2, 2, 2])
