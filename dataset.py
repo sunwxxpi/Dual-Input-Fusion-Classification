@@ -47,12 +47,13 @@ class AddBlur(object):
 
 
 class CustomDataset(Dataset):
-    def __init__(self, root, transform, mask_transform):
+    def __init__(self, root, transform, mask_transform, elastogram_transform):
         super().__init__()
         self.root = root
         self.csv = os.path.join(root, "label.csv")
         self.transform = transform
         self.mask_transform = mask_transform
+        self.elastogram_transform = elastogram_transform
         self.info = pd.read_csv(self.csv)
 
     def __len__(self):
@@ -63,16 +64,19 @@ class CustomDataset(Dataset):
         file_name = patience_info['name']
         file_path = glob(f"{self.root}/img/{file_name}")[0]
         mask_path = glob(f"{self.root}/mask/{file_name}")[0]
+        elastogram_path = glob(f"{self.root}/elastogram/{file_name}")[0]
         label = patience_info['label']
         
         img = Image.open(file_path).convert('L')
         mask = Image.open(mask_path).convert('RGB')
+        elastogram = Image.open(elastogram_path).convert('RGB')
         
         if self.transform is not None:
             img = self.transform(img)
             mask = self.mask_transform(mask)
+            elastogram = self.elastogram_transform(elastogram)
 
-        return {'imgs': img, 'masks': mask, 'labels': label, 'names': file_name}
+        return {'imgs': img, 'masks': mask, 'elastograms': elastogram, 'labels': label, 'names': file_name}
 
 
 def get_dataset(imgpath, img_size, mode='train'):
@@ -101,11 +105,18 @@ def get_dataset(imgpath, img_size, mode='train'):
         transforms.Normalize(mean=0.5, std=0.5)
     ])
 
+    elastogram_transform = transforms.Compose([
+        transforms.Resize((img_size, img_size)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=0.5, std=0.5)
+    ])
+
     if mode =='train':
         transform = train_transform
     elif mode == 'test':
         transform = test_transform
 
-    dataset = CustomDataset(imgpath, transform, mask_transform)
+    dataset = CustomDataset(imgpath, transform, mask_transform, elastogram_transform)
 
     return dataset

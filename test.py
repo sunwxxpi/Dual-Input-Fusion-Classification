@@ -57,10 +57,11 @@ def main():
                 if images.shape[1] == 1:
                     images = images.expand((-1, 3, -1, -1))
                 masks = pack['masks'].to(device)
+                elastograms = pack['elastograms'].to(device)
                 labels = pack['labels'].to(device)
 
-                outputs = get_model_output(config, model, images, masks)
-                preds = outputs.argmax(dim=1).cpu().numpy()
+                output = get_model_output(config, model, images, masks, elastograms)
+                preds = output.argmax(dim=1).cpu().numpy()
 
                 all_labels.extend(labels.cpu().numpy())
                 all_preds.extend(preds)

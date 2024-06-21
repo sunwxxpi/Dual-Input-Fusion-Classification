@@ -90,9 +90,10 @@ def train(config, train_loader, test_loader, fold):
                 if images.shape[1] == 1:
                     images = images.expand((-1, 3, -1, -1))
                 masks = pack['masks'].to(device)
+                elastograms = pack['elastograms'].to(device)
                 labels = pack['labels'].to(device)
 
-                output = get_model_output(config, model, images, masks)
+                output = get_model_output(config, model, images, masks, elastograms)
                 loss = criterion(output, labels)
                 
                 pred = output.argmax(dim=1)
@@ -111,7 +112,7 @@ def train(config, train_loader, test_loader, fold):
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         train_acc = cm.diag().sum() / cm.sum()
-        print('Fold [%d], Epoch [%d/%d] - Avg Train Loss: %.4f' % (fold, epoch, config.epochs, avg_epoch_loss))
+        print('Fold [%d/%d], Epoch [%d/%d] - Avg Train Loss: %.4f' % (fold, config.fold, epoch, config.epochs, avg_epoch_loss))
 
         # Log training metrics
         writer.add_scalar('Train/Avg Epoch Loss', avg_epoch_loss, global_step=epoch)
@@ -119,8 +120,7 @@ def train(config, train_loader, test_loader, fold):
         writer.add_scalar('Train/LR', optimizer.state_dict()['param_groups'][0]['lr'], global_step=epoch)
 
         if epoch % config.log_step == 0 or epoch == config.epochs:
-            with torch.no_grad():
-                result = validate(config, model, test_loader, criterion)
+            result = validate(config, model, test_loader, criterion)
 
             # Log validation metrics
             val_loss, val_acc, f1score, auc, sen, pre, spe = result
@@ -185,4 +185,4 @@ if __name__ == '__main__':
 
         fold += 1
         
-# python train.py --data_path ./data/BUSI_2_class/train --class_num 2 --model_name hovertrans --writer_comment BUSI_2_class_img --mode img
+# CUDA_VISIBLE_DEVICES=0 python train.py --data_path ./data/BUSI_2_class/train --class_num 2 --model_name custom --writer_comment BUSI_2_class_img --mode img && CUDA_VISIBLE_DEVICES=0 python test.py --data_path ./data/BUSI_2_class/test --class_num 2 --model_name custom --writer_comment BUSI_2_class_img --mode img

@@ -34,14 +34,14 @@ def calculate_metrics(cm, class_num):
     avg_sensitivity = sum(sensitivity) / class_num
     avg_precision = sum(precision) / class_num
     avg_recall = avg_sensitivity
-    f1score = 2 * avg_precision * avg_recall / (avg_precision + avg_recall + 1e-6)
+    f1score = (2 * avg_precision * avg_recall) / (avg_precision + avg_recall + 1e-6)
 
-    return avg_specificity, avg_sensitivity, avg_precision, f1score
+    return f1score, avg_specificity, avg_sensitivity, avg_precision
 
 
-def validate(config, net, val_loader, criterion):
-    device = next(net.parameters()).device
-    net.eval()
+def validate(config, model, val_loader, criterion):
+    device = next(model.parameters()).device
+    model.eval()
 
     print("START VALIDATION")
 
@@ -57,9 +57,10 @@ def validate(config, net, val_loader, criterion):
                 if images.shape[1] == 1:
                     images = images.expand((-1, 3, -1, -1))
                 masks = pack['masks'].to(device)
+                elastograms = pack['elastograms'].to(device)
                 labels = pack['labels'].to(device)
 
-                output = get_model_output(config, net, images, masks)
+                output = get_model_output(config, model, images, masks, elastograms)
 
                 loss = criterion(output, labels)
                 epoch_loss += loss.item() * images.size(0)  # accumulate loss over batch
@@ -77,7 +78,7 @@ def validate(config, net, val_loader, criterion):
 
     # Calculate metrics
     acc = cm.diag().sum() / cm.sum()
-    avg_specificity, avg_sensitivity, avg_precision, f1score = calculate_metrics(cm, config.class_num)
+    f1score, avg_specificity, avg_sensitivity, avg_precision = calculate_metrics(cm, config.class_num)
 
     # Compute AUC for each class and average
     y_true = np.array(y_true)
