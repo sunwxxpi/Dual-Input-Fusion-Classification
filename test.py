@@ -12,6 +12,8 @@ from config import load_config
 
 
 def plot_confusion_matrix(conf_matrix, class_names, accuracy, f1, output_path):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
     plt.figure(figsize=(10, 8))
     sns.heatmap(conf_matrix, annot=True, fmt='.2f', cmap='Blues', xticklabels=class_names, yticklabels=class_names)
     plt.xlabel('Predicted')
@@ -81,7 +83,7 @@ def main():
         print(f'F1 Score: {f1:.4f}')
         print(class_report)
 
-        output_path = f'./result/{config.model_name}_{config.writer_comment}_{fold}.png'
+        output_path = os.path.join('./result', config.model_name, config.writer_comment, f'{fold}.png')
         plot_confusion_matrix(conf_matrix, [str(i) for i in range(config.class_num)], accuracy, f1, output_path)
 
 if __name__ == '__main__':
