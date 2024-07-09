@@ -10,7 +10,7 @@ def confusion_matrix(preds, labels, conf_matrix):
     labels = torch.flatten(labels)
 
     for p, t in zip(preds, labels):
-        conf_matrix[int(p), int(t)] += torch.tensor(1)
+        conf_matrix[int(p), int(t)] += 1
 
     return conf_matrix
 

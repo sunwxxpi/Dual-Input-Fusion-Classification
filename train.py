@@ -44,12 +44,13 @@ def save_results(model_save_path, filename, epoch, loss, val_acc, spe, sen, auc,
 
 
 def train(config, train_loader, test_loader, fold):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # MODEL
     model = create_model(model_name=config.model_name, img_size=config.img_size, class_num=config.class_num, drop_rate=0.1, attn_drop_rate=0.1,
                          patch_size=config.patch_size, dim=config.dim, depth=config.depth, num_heads=config.num_heads,
                          num_inner_head=config.num_inner_head, mode=config.mode)
+    model = nn.DataParallel(model)
     model = model.to(device)
 
     # LOSS FUNCTION

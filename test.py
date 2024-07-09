@@ -1,5 +1,6 @@
 import os
 import torch
+import torch.nn as nn
 import matplotlib.pyplot as plt
 import seaborn as sns
 import dataset
@@ -26,13 +27,14 @@ def load_model(model_path, config):
                          patch_size=config.patch_size, dim=config.dim, depth=config.depth, num_heads=config.num_heads,
                          num_inner_head=config.num_inner_head, mode=config.mode)
     model.load_state_dict(torch.load(model_path))
+    model = nn.DataParallel(model)
     
     return model
 
 
 def main():
     config = load_config()
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     test_dataset = dataset.get_dataset(config.data_path, config.img_size, mode='test')
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=6)
