@@ -9,7 +9,7 @@ from tqdm import tqdm
 from sklearn.model_selection import StratifiedKFold
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.utils.tensorboard import SummaryWriter
-from config import config
+from config import load_config
 from model import create_model, get_model_output
 from valid import validate
 
@@ -158,7 +158,7 @@ def train(config, train_loader, test_loader, fold):
 
 if __name__ == '__main__':
     seed_torch(42)
-    args = config()
+    args = load_config()
 
     cv = StratifiedKFold(n_splits=args.fold, random_state=42, shuffle=True)
     train_set = dataset.get_dataset(args.data_path, args.img_size, mode='train')

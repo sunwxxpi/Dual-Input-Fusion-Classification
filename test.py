@@ -8,7 +8,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report
 from model import create_model, get_model_output
-from config import config as load_config
+from config import load_config
 
 
 def plot_confusion_matrix(conf_matrix, class_names, accuracy, f1, output_path):

@@ -1,7 +1,7 @@
 import argparse
 
 
-def config():
+def load_config():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', type=str)
     parser.add_argument('--model_name', type=str, default='hovertrans', choices=['hovertrans', 'custom'])
