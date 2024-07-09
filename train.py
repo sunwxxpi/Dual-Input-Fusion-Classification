@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import dataset
 from tqdm import tqdm
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.utils.tensorboard import SummaryWriter
 from config import config
@@ -77,7 +77,7 @@ def train(config, train_loader, test_loader, fold):
     ckpt_path = os.path.join(config.model_path, config.model_name, config.writer_comment)
     model_save_path = os.path.join(ckpt_path, str(fold))
     
-    best_val_acc = 0
+    best_val_loss = float('inf')
 
     for epoch in range(1, config.epochs + 1):
         model.train()
@@ -132,8 +132,8 @@ def train(config, train_loader, test_loader, fold):
             writer.add_scalar('Validation/Pre', pre, global_step=epoch)
             writer.add_scalar('Validation/Spe', spe, global_step=epoch)
 
-            if epoch > (config.epochs // 5) and val_acc > best_val_acc:
-                best_val_acc = val_acc
+            if epoch > (config.epochs // 10) and val_loss < best_val_loss:
+                best_val_loss = val_loss
                 print("=> saved best model")
 
                 if not os.path.exists(model_save_path):
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     seed_torch(42)
     args = config()
 
-    cv = KFold(n_splits=args.fold, random_state=42, shuffle=True)
+    cv = StratifiedKFold(n_splits=args.fold, random_state=42, shuffle=True)
     train_set = dataset.get_dataset(args.data_path, args.img_size, mode='train')
     test_set = dataset.get_dataset(args.data_path, args.img_size, mode='test')
 
@@ -173,7 +173,9 @@ if __name__ == '__main__':
 
     print("START TRAINING")
     fold = 1
-    for train_idx, test_idx in cv.split(train_set):
+    train_labels = [train_set[i]['labels'] for i in range(len(train_set))]
+    
+    for train_idx, test_idx in cv.split(train_set, train_labels):
         print(f"\nCross Validation Fold {fold}")
 
         train_sampler = SubsetRandomSampler(train_idx)
