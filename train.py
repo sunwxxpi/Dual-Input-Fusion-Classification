@@ -50,7 +50,8 @@ def train(config, train_loader, test_loader, fold):
     model = create_model(model_name=config.model_name, img_size=config.img_size, class_num=config.class_num, drop_rate=0.1, attn_drop_rate=0.1,
                          patch_size=config.patch_size, dim=config.dim, depth=config.depth, num_heads=config.num_heads,
                          num_inner_head=config.num_inner_head, mode=config.mode)
-    model = nn.DataParallel(model)
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
     model = model.to(device)
 
     # LOSS FUNCTION
@@ -141,18 +142,23 @@ def train(config, train_loader, test_loader, fold):
                     os.makedirs(model_save_path)
 
                 if config.save_model:
-                    torch.save(model.state_dict(), os.path.join(model_save_path, 'best_model.pth'))
+                    if isinstance(model, nn.DataParallel):
+                        torch.save(model.module.state_dict(), os.path.join(model_save_path, 'best_model.pth'))
+                    else:
+                        torch.save(model.state_dict(), os.path.join(model_save_path, 'best_model.pth'))
 
                 save_results(model_save_path, 'result_best.txt', epoch, val_loss, val_acc, f1score, auc, spe, sen, pre, 'w')
 
             if epoch == config.epochs:
                 if config.save_model:
-                    torch.save(model.state_dict(), os.path.join(model_save_path, 'last_epoch_model.pth'))
+                    if isinstance(model, nn.DataParallel):
+                        torch.save(model.module.state_dict(), os.path.join(model_save_path, 'last_epoch_model.pth'))
+                    else:
+                        torch.save(model.state_dict(), os.path.join(model_save_path, 'last_epoch_model.pth'))
 
                 save_results(model_save_path, 'result_last_epoch.txt', epoch, val_loss, val_acc, f1score, auc, spe, sen, pre, 'a')
 
             writer.flush()
-            
     writer.close()
 
 
