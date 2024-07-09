@@ -82,12 +82,10 @@ class CustomDataset(Dataset):
 def get_dataset(imgpath, img_size, mode='train'):
     train_transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
-        AddGaussianNoise(amplitude=random.uniform(0, 1), p=0.5),
-        AddBlur(kernel=3, p=0.5),
-        transforms.RandomHorizontalFlip(p=0.5),
-        # transforms.RandomVerticalFlip(p=0.5),
-        # transforms.RandomRotation(20),
-        transforms.ColorJitter(brightness=(0.5, 2), contrast=(0.5, 2)),
+        # AddGaussianNoise(amplitude=random.uniform(0, 1), p=0.5),
+        # AddBlur(kernel=3, p=0.5),
+        # transforms.RandomHorizontalFlip(p=0.5),
+        # transforms.ColorJitter(brightness=(0.5, 2), contrast=(0.5, 2)),
         transforms.ToTensor(),
         transforms.Normalize(mean=0.5, std=0.5)
     ])
@@ -100,14 +98,14 @@ def get_dataset(imgpath, img_size, mode='train'):
     
     mask_transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
-        transforms.RandomHorizontalFlip(),
+        # transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean=0.5, std=0.5)
     ])
 
     elastogram_transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
-        transforms.RandomHorizontalFlip(),
+        # transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean=0.5, std=0.5)
     ])
