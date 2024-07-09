@@ -263,16 +263,18 @@ class Stage(nn.Module):
 class HoVerTrans(nn.Module):
     def __init__(self, model_name=None, img_size=224, patch_size=32, in_chans=3, class_num=2, embed_dim=768, dim=48, depth=12,
                  num_heads=12, num_inner_head=4, mlp_ratio=4., drop_rate=0., attn_drop_rate=0.,
-                 drop_path_rate=0.1, norm_layer=nn.LayerNorm, mode='single'):
+                 drop_path_rate=0.1, norm_layer=nn.LayerNorm, mode='b'):
         super().__init__()
         self.class_num = class_num
         self.embed_dim = embed_dim
         self.mode = mode
 
-        if self.mode in ['img_mask', 'b_se', 'mask_se']:
+        if self.mode in ['b_mask', 'b_se', 'mask_se']:
             self.conv1x1 = nn.Conv2d(6, 3, kernel_size=1)
         elif self.mode == 'b_mask_se':
             self.conv1x1 = nn.Conv2d(9, 3, kernel_size=1)
+        else:
+            raise ValueError(f"Unknown mode: {self.mode}")
 
         stride = [4, 2, 2, 2]
         self.stage = nn.ModuleList([])
@@ -339,13 +341,13 @@ class HoVerTrans(nn.Module):
         return img_merge
 
     def forward(self, images=None, masks=None, elastograms=None):
-        if self.mode == 'img':
+        if self.mode == 'b':
             x = images
         elif self.mode == 'mask':
             x = masks
-        elif self.mode == 'elastogram':
+        elif self.mode == 'se':
             x = elastograms
-        elif self.mode == 'img_mask':
+        elif self.mode == 'b_mask':
             x = torch.cat((images, masks), dim=1)
             x = self.conv1x1(x)
         elif self.mode == 'b_se':
@@ -369,7 +371,7 @@ class HoVerTrans(nn.Module):
     
 
 class CustomModel(nn.Module):
-    def __init__(self, mode='img', class_num=3):
+    def __init__(self, mode='b', class_num=3):
         super(CustomModel, self).__init__()
         
         self.mode = mode
@@ -379,19 +381,21 @@ class CustomModel(nn.Module):
         in_ftrs = self.model_ft.classifier.in_features
         self.model_ft.classifier = nn.Linear(in_ftrs, class_num)
         
-        if self.mode in ['img_mask', 'b_se', 'mask_se']:
+        if self.mode in ['b_mask', 'b_se', 'mask_se']:
             self.conv1x1 = nn.Conv2d(6, 3, kernel_size=1)
         elif self.mode == 'b_mask_se':
             self.conv1x1 = nn.Conv2d(9, 3, kernel_size=1)
+        else:
+            raise ValueError(f"Unknown mode: {self.mode}")
             
     def forward(self, images=None, masks=None, elastograms=None):
-        if self.mode == 'img':
+        if self.mode == 'b':
             x = images
         elif self.mode == 'mask':
             x = masks
-        elif self.mode == 'elastogram':
+        elif self.mode == 'se':
             x = elastograms
-        elif self.mode == 'img_mask':
+        elif self.mode == 'b_mask':
             x = torch.cat((images, masks), dim=1)
             x = self.conv1x1(x)
         elif self.mode == 'b_se':
@@ -421,13 +425,13 @@ def create_model(embed_dim=640, **kwargs):
 
 
 def get_model_output(config, model, images, masks, elastograms):
-    if config.mode == 'img':
+    if config.mode == 'b':
         return model(images=images)
     elif config.mode == 'mask':
         return model(masks=masks)
-    elif config.mode == 'elastogram':
+    elif config.mode == 'se':
         return model(elastograms=elastograms)
-    elif config.mode == 'img_mask':
+    elif config.mode == 'b_mask':
         return model(images=images, masks=masks)
     elif config.mode == 'b_se':
         return model(images=images, elastograms=elastograms)

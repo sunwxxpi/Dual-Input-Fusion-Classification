@@ -8,7 +8,7 @@ def config():
     parser.add_argument('--model_path', type=str, default='./weight')
     parser.add_argument('--writer_comment', type=str, default='GDPH&SYSUCC')
     parser.add_argument('--save_model', type=bool, default=True)
-    parser.add_argument('--mode', type=str, default='img')
+    parser.add_argument('--mode', type=str, default='b')
 
     # MODEL PARAMETER
     parser.add_argument('--img_size', type=int, default=256)
