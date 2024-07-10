@@ -25,9 +25,9 @@ def plot_confusion_matrix(conf_matrix, class_names, accuracy, f1, output_path):
 
 
 def load_model(model_path, config):
-    model = create_model(model_name=config.model_name, img_size=config.img_size, class_num=config.class_num, drop_rate=0.1, attn_drop_rate=0.1,
-                         patch_size=config.patch_size, dim=config.dim, depth=config.depth, num_heads=config.num_heads,
-                         num_inner_head=config.num_inner_head, mode=config.mode)
+    model = create_model(config=config, img_size=config.img_size, class_num=config.class_num, mode=config.mode, patch_size=config.patch_size, 
+                         dim=config.dim, depth=config.depth, num_heads=config.num_heads, num_inner_head=config.num_inner_head, 
+                         drop_rate=config.drop_rate, attn_drop_rate=config.attn_drop_rate)
     
     if torch.cuda.device_count() > 1:
         model.load_state_dict(torch.load(model_path))

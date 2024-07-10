@@ -25,6 +25,8 @@ def load_config():
     parser.add_argument('--depth', type=list, default=[2, 4, 4, 2])
     parser.add_argument('--num_heads', type=list, default=[2, 4, 8, 16])
     parser.add_argument('--num_inner_head', type=list, default=[2, 4, 8, 16])
+    parser.add_argument('--drop_rate', type=float, default=0.1)
+    parser.add_argument('--attn_drop_rate', type=float, default=0.1)
 
     parser.add_argument('--loss_function', type=str, default='CE')
     parser.add_argument('--optimizer', type=str, default='AdamW', choices=['SGD', 'Adam', 'AdamW'])

@@ -78,7 +78,7 @@ class Mlp(nn.Module):
         return x
 
 class Merge(nn.Module):
-    def __init__(self, in_dim, out_dim, patch_size, in_chans=3):
+    def __init__(self, in_dim, out_dim, patch_size):
         super().__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_dim*2, in_dim*4, kernel_size=1, stride=1),
@@ -111,7 +111,7 @@ class Merge(nn.Module):
         return img_merge
 
 class Block(nn.Module):
-    def __init__(self, dim, words_in_sentence, patch_size, sentences, in_chans=3, num_heads=2, num_inner_heads=4, mlp_ratio=4.,
+    def __init__(self, dim, words_in_sentence, patch_size, sentences, num_heads=2, num_inner_heads=4, mlp_ratio=4.,
             qkv_bias=False, drop=0., attn_drop=0., drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         # Inner transformer
@@ -187,7 +187,7 @@ class Block(nn.Module):
         return pixel_embed1, pixel_embed2, row_embed, column_embed
 
 class ToEmbed(nn.Module):
-    def __init__(self, img_size=256, in_chans=3, patch_size=2, dim=8):
+    def __init__(self, img_size=256, patch_size=2, dim=8):
         super().__init__()
         img_size_tuple = (img_size, img_size)
         row_patch_size = (patch_size, img_size)
@@ -222,12 +222,12 @@ class ToEmbed(nn.Module):
         return pixel_embed, pixel_embed, row_embed, column_embed
 
 class Stage(nn.Module):
-    def __init__(self, img_size, patch_size, in_chans, dim, out_dim, num_heads=2, num_inner_head=2, depth=1, 
+    def __init__(self, img_size, patch_size, dim, out_dim, num_heads=2, num_inner_head=2, depth=1, 
                      mlp_ratio=4., qkv_bias=False, drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1, 
                      norm_layer=nn.LayerNorm):
         super().__init__()
 
-        self.pixel_embed = ToEmbed(img_size=img_size, patch_size=patch_size, in_chans=in_chans, dim=dim)
+        self.pixel_embed = ToEmbed(img_size=img_size, patch_size=patch_size, dim=dim)
         row_patch_size = self.pixel_embed.row_patch_size        
         self.row_pixel = row_patch_size[0] * row_patch_size[1]
         self.patch_pixel = patch_size*patch_size
@@ -238,10 +238,10 @@ class Stage(nn.Module):
         for i in range(depth):
             blocks.append(Block(
                 dim=dim, words_in_sentence=self.row_pixel, num_heads=num_heads, num_inner_heads=num_inner_head,
-                mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, drop=drop_rate, attn_drop=attn_drop_rate, in_chans=in_chans,
-                drop_path=dpr[i], norm_layer=norm_layer, patch_size=patch_size, sentences=self.num_patches))
+                mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], 
+                norm_layer=norm_layer, patch_size=patch_size, sentences=self.num_patches))
         self.blocks = nn.ModuleList(blocks)
-        self.merge = Merge(in_dim=dim, out_dim=out_dim, patch_size=patch_size, in_chans=in_chans,)
+        self.merge = Merge(in_dim=dim, out_dim=out_dim, patch_size=patch_size)
 
         self.pos_drop = nn.Dropout(p=drop_rate)
 
@@ -261,12 +261,10 @@ class Stage(nn.Module):
 
 
 class HoVerTrans(nn.Module):
-    def __init__(self, model_name=None, img_size=224, patch_size=32, in_chans=3, class_num=2, embed_dim=768, dim=48, depth=12,
-                 num_heads=12, num_inner_head=4, mlp_ratio=4., drop_rate=0., attn_drop_rate=0.,
-                 drop_path_rate=0.1, norm_layer=nn.LayerNorm, mode='b'):
+    def __init__(self, img_size=224, class_num=2, mode='b', patch_size=32, in_chans=3, dim=48, depth=12, num_heads=12, num_inner_head=4, 
+                 mlp_ratio=4., drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1, norm_layer=nn.LayerNorm):
         super().__init__()
         self.class_num = class_num
-        self.embed_dim = embed_dim
         self.mode = mode
 
         if self.mode in ['b_mask', 'b_se', 'mask_se']:
@@ -281,9 +279,9 @@ class HoVerTrans(nn.Module):
         self.downsample = nn.ModuleList([])
         for i in range(4):
             if i == 0:
-                self.stage.append(Stage(img_size=img_size//stride[i], patch_size=patch_size[i], in_chans=in_chans, dim=dim[i], out_dim=dim[i]*2,
-                            depth=depth[i], num_heads=num_heads[i], num_inner_head=num_inner_head[i], mlp_ratio=mlp_ratio, qkv_bias=False, 
-                            drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, drop_path_rate=drop_path_rate, norm_layer=nn.LayerNorm))
+                self.stage.append(Stage(img_size=img_size//stride[i], patch_size=patch_size[i], dim=dim[i], out_dim=dim[i]*2, depth=depth[i], 
+                                        num_heads=num_heads[i], num_inner_head=num_inner_head[i], mlp_ratio=mlp_ratio, qkv_bias=False, 
+                                        drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, drop_path_rate=drop_path_rate, norm_layer=nn.LayerNorm))
                 num_patches = self.stage[i].num_patches
                 row_pixel = self.stage[i].row_pixel
                 patch_pixel = self.stage[i].patch_pixel
@@ -303,7 +301,7 @@ class HoVerTrans(nn.Module):
                             nn.ReLU(inplace=True),
                         ))
             else:
-                self.stage.append(Stage(img_size=img_size//(2**(i+2)), patch_size=patch_size[i], in_chans=dim[i], dim=dim[i], out_dim=dim[i]*2,
+                self.stage.append(Stage(img_size=img_size//(2**(i+2)), patch_size=patch_size[i], dim=dim[i], out_dim=dim[i]*2,
                             depth=depth[i], num_heads=num_heads[i], num_inner_head=num_inner_head[i], mlp_ratio=mlp_ratio, qkv_bias=False, 
                             drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, drop_path_rate=drop_path_rate, norm_layer=nn.LayerNorm))
                 self.downsample.append(nn.AvgPool2d(kernel_size=stride[i]))
@@ -371,11 +369,11 @@ class HoVerTrans(nn.Module):
     
 
 class CustomModel(nn.Module):
-    def __init__(self, mode='b', class_num=3):
+    def __init__(self, class_num=2, mode='b'):
         super(CustomModel, self).__init__()
         
-        self.mode = mode
         self.class_num = class_num
+        self.mode = mode
         
         self.model_ft = models.densenet161(weights='DEFAULT')
         in_ftrs = self.model_ft.classifier.in_features
@@ -415,11 +413,13 @@ class CustomModel(nn.Module):
         return x
     
 
-def create_model(embed_dim=640, **kwargs):
-    if kwargs['model_name'] == 'hovertrans':
-        model = HoVerTrans(embed_dim=embed_dim, **kwargs)
-    elif kwargs['model_name'] == 'custom':
-        model = CustomModel(mode = kwargs['mode'], class_num=kwargs['class_num'])
+def create_model(config, **kwargs):
+    if config.model_name == 'hovertrans':
+        model = HoVerTrans(**kwargs)
+    elif config.model_name == 'custom':
+        model = CustomModel(mode=kwargs['mode'], class_num=kwargs['class_num'])
+    else:
+        raise ValueError(f"Unknown model: {config.model_name}")
     
     return model
 
