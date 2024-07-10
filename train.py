@@ -194,5 +194,3 @@ if __name__ == '__main__':
         train(args, train_loader, test_loader, fold)
 
         fold += 1
-        
-# CUDA_VISIBLE_DEVICES=0 python train.py --data_path ./data/BUSI_2_class/train --class_num 2 --model_name custom --writer_comment BUSI_2_class_img --mode img && CUDA_VISIBLE_DEVICES=0 python test.py --data_path ./data/BUSI_2_class/test --class_num 2 --model_name custom --writer_comment BUSI_2_class_img --mode img
