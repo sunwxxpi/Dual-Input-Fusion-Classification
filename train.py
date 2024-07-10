@@ -75,7 +75,7 @@ def train(config, train_loader, test_loader, fold):
         lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=config.step, gamma=0.9)
 
     # TensorBoard WRITER
-    writer = SummaryWriter(log_dir=f'./logs/{config.model_name}_{config.writer_comment}_{str(fold)}')
+    writer = SummaryWriter(log_dir=f'./logs/{config.model_name}/{config.writer_comment}_{str(fold)}')
 
     ckpt_path = os.path.join(config.model_path, config.model_name, config.writer_comment)
     model_save_path = os.path.join(ckpt_path, str(fold))
