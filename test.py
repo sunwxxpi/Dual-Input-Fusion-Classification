@@ -58,6 +58,9 @@ def main():
         model = model.to(device)
         model.eval()
 
+        output_path = os.path.join('./result', config.model_name, config.writer_comment)
+        conf_matrix_plot_path = os.path.join(output_path, 'conf_matrix', f'{fold}.png')
+
         with torch.no_grad():
             for pack in tqdm(test_loader, desc=f'Testing Fold {fold}', unit='batch'):
                 images = pack['imgs'].to(device)
@@ -69,7 +72,7 @@ def main():
 
                 output = get_model_output(config, model, images, masks, elastograms)
                 preds = output.argmax(dim=1).cpu().numpy()
-
+                
                 all_labels.extend(labels.cpu().numpy())
                 all_preds.extend(preds)
 
@@ -83,8 +86,7 @@ def main():
         print(f'F1 Score: {f1:.4f}')
         print(class_report)
 
-        output_path = os.path.join('./result', config.model_name, config.writer_comment, f'{fold}.png')
-        plot_confusion_matrix(conf_matrix, [str(i) for i in range(config.class_num)], accuracy, f1, output_path)
+        plot_confusion_matrix(conf_matrix, [str(i) for i in range(config.class_num)], accuracy, f1, conf_matrix_plot_path)
 
 if __name__ == '__main__':
     main()
