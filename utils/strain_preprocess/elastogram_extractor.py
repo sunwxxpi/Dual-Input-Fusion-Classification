@@ -102,10 +102,13 @@ def ensure_dir(directory):
 
 def extract_elastogram(base_dir, output_dir):
     for score in range(1, 6):
-        input_path = f"{base_dir}/score{score}/*.png"
+        input_path = f"{base_dir}/SCORE {score}/**/*.png"
         images = glob.glob(input_path)
         
-        for image_path in images:
+        # Filter images to only include those with "E" in their filename
+        filtered_images = [img for img in images if 'E' in os.path.basename(img)]
+        
+        for image_path in filtered_images:
             try:
                 output_subdir = os.path.join(output_dir, f"elastogram_cropped/score{score}")
                 ensure_dir(output_subdir)
@@ -142,6 +145,6 @@ def extract_elastogram(base_dir, output_dir):
                 print(f"Error processing {image_path}: {e}")
             
 
-base_dir = './strain_png/S'
+base_dir = './strain_png'
 output_dir = './strain_png'
 extract_elastogram(base_dir, output_dir)
