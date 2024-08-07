@@ -375,9 +375,13 @@ class CustomModel(nn.Module):
         self.class_num = class_num
         self.mode = mode
         
-        self.model_ft = models.densenet161(weights='DEFAULT')
+        """ self.model_ft = models.densenet161(weights='DEFAULT')
         in_ftrs = self.model_ft.classifier.in_features
-        self.model_ft.classifier = nn.Linear(in_ftrs, class_num)
+        self.model_ft.classifier = nn.Linear(in_ftrs, class_num) """
+        
+        self.model_ft = models.shufflenet_v2_x2_0(weights='DEFAULT')
+        in_ftrs = self.model_ft.fc.in_features
+        self.model_ft.fc = nn.Linear(in_ftrs, 5)
         
         if self.mode in ['b_mask', 'b_se', 'mask_se']:
             self.conv1x1 = nn.Conv2d(6, 3, kernel_size=1)
