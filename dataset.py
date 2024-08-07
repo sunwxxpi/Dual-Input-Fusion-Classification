@@ -46,6 +46,7 @@ class AddBlur(object):
             return img
 
 
+# CustomDataset 정의
 class CustomDataset(Dataset):
     def __init__(self, root, transform, mask_transform, elastogram_transform):
         super().__init__()
@@ -70,11 +71,21 @@ class CustomDataset(Dataset):
         img = Image.open(file_path).convert('L')
         mask = Image.open(mask_path).convert('RGB')
         elastogram = Image.open(elastogram_path).convert('RGB')
-        
+
+        # 동일한 무작위 변환 적용
         if self.transform is not None:
             img = self.transform(img)
+
+        if self.mask_transform is not None:
             mask = self.mask_transform(mask)
+        
+        if self.elastogram_transform is not None:
             elastogram = self.elastogram_transform(elastogram)
+
+        if random.random() < 0.5:
+            img = transforms.functional.hflip(img)
+            mask = transforms.functional.hflip(mask)
+            elastogram = transforms.functional.hflip(elastogram)
 
         return {'imgs': img, 'masks': mask, 'elastograms': elastogram, 'labels': label, 'names': file_name}
 
@@ -82,10 +93,8 @@ class CustomDataset(Dataset):
 def get_dataset(imgpath, img_size, mode='train'):
     train_transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
-        # AddGaussianNoise(amplitude=random.uniform(0, 1), p=0.5),
-        # AddBlur(kernel=3, p=0.5),
-        # transforms.RandomHorizontalFlip(p=0.5),
-        # transforms.ColorJitter(brightness=(0.5, 2), contrast=(0.5, 2)),
+        AddGaussianNoise(amplitude=random.uniform(0, 1), p=0.5),
+        AddBlur(kernel=3, p=0.5),
         transforms.ToTensor(),
         transforms.Normalize(mean=0.5, std=0.5)
     ])
@@ -98,19 +107,17 @@ def get_dataset(imgpath, img_size, mode='train'):
     
     mask_transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
-        # transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean=0.5, std=0.5)
     ])
 
     elastogram_transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
-        # transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean=0.5, std=0.5)
     ])
 
-    if mode =='train':
+    if mode == 'train':
         transform = train_transform
     elif mode == 'test':
         transform = test_transform
