@@ -30,11 +30,9 @@ def load_model(model_path, config):
                          dim=config.dim, depth=config.depth, num_heads=config.num_heads, num_inner_head=config.num_inner_head, 
                          drop_rate=config.drop_rate, attn_drop_rate=config.attn_drop_rate)
     
+    model.load_state_dict(torch.load(model_path))
     if torch.cuda.device_count() > 1:
-        model.load_state_dict(torch.load(model_path))
         model = nn.DataParallel(model)
-    else:
-        model.load_state_dict(torch.load(model_path))
     
     return model
 
